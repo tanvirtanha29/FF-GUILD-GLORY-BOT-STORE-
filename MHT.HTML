@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FF Guild Glory Bot Store</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            user-select: none;
+        }
+        body {
+            background-color: #0f172a;
+            color: #f8fafc;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            background: #1e293b;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            max-width: 450px;
+            width: 100%;
+            border: 1px solid #334155;
+        }
+        h2 {
+            text-align: center;
+            color: #38bdf8;
+            margin-bottom: 20px;
+            font-size: 22px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+            color: #94a3b8;
+        }
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #475569;
+            background: #0f172a;
+            color: #fff;
+            font-size: 14px;
+            outline: none;
+        }
+        input:focus, select:focus {
+            border-color: #38bdf8;
+        }
+        .btn-flex {
+            display: flex;
+            gap: 10px;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #0284c7;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        button:hover {
+            background: #0369a1;
+        }
+        .btn-secondary {
+            background: #475569;
+        }
+        .btn-secondary:hover {
+            background: #334155;
+        }
+        #response-msg, #guild-result {
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 6px;
+            display: none;
+            font-size: 14px;
+            text-align: center;
+        }
+        .success { background: #065f46; color: #34d399; }
+        .error { background: #991b1b; color: #fca5a5; }
+        .info-box { background: #0f172a; border: 1px solid #334155; color: #38bdf8; text-align: left; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>FF Guild Glory Bot Store</h2>
+    
+    <!-- Guild Check Section -->
+    <div class="form-group">
+        <label for="checkUid">Check Guild by UID</label>
+        <div class="btn-flex">
+            <input type="text" id="checkUid" placeholder="Enter UID to check" autocomplete="off">
+            <button type="button" id="checkBtn" style="width: 120px;" onclick="checkGuildInfo()">Check</button>
+        </div>
+    </div>
+    <div id="guild-result"></div>
+
+    <hr style="border: 0; border-top: 1px solid #334155; margin: 20px 0;">
+
+    <!-- Order Form -->
+    <form id="gloryForm">
+        <div class="form-group">
+            <label for="playerUid">Player UID</label>
+            <input type="text" id="playerUid" placeholder="Enter Player UID" required autocomplete="off">
+        </div>
+        <div class="form-group">
+            <label for="guildId">Guild ID</label>
+            <input type="text" id="guildId" placeholder="Enter Guild ID" required autocomplete="off">
+        </div>
+        <div class="form-group">
+            <label for="packageId">Glory Package</label>
+            <select id="packageId" required>
+                <option value="1000">1,000 Glory - 50 BDT</option>
+                <option value="5000">5,000 Glory - 200 BDT</option>
+                <option value="10000">10,000 Glory - 350 BDT</option>
+            </select>
+        </div>
+        <button type="submit" id="submitBtn">Buy Glory Now</button>
+    </form>
+    <div id="response-msg"></div>
+</div>
+
+<script>
+    // ১. সিকিউরিটি রাইট ক্লিক ও শর্টকাট ডিজেবল
+    document.addEventListener('contextmenu', event => event.preventDefault());
+    document.onkeydown = function (e) {
+        if (e.keyCode == 123 || 
+            (e.ctrlKey && e.shiftKey && e.keyCode == 73) || 
+            (e.ctrlKey && e.shiftKey && e.keyCode == 67) || 
+            (e.ctrlKey && e.keyCode == 85)) {
+            return false;
+        }
+    };
+
+    // ২. গিল্ড চেক করার ফাংশন
+    async function checkGuildInfo() {
+        const uid = document.getElementById('checkUid').value.trim();
+        const resultDiv = document.getElementById('guild-result');
+        const checkBtn = document.getElementById('checkBtn');
+
+        if (!uid) {
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'error';
+            resultDiv.innerText = 'দয়া করে আগে একটি UID লিখুন!';
+            return;
+        }
+
+        checkBtn.disabled = true;
+        checkBtn.innerText = 'Checking...';
+        resultDiv.style.display = 'none';
+
+        try {
+            const res = await fetch(`/api/account/check-guild?uid=${uid}`);
+            const data = await res.json();
+
+            resultDiv.style.display = 'block';
+            if (data.success) {
+                resultDiv.className = 'info-box';
+                resultDiv.innerHTML = `<b>গিল্ডের নাম:</b> ${data.guildInfo.name}<br><b>গিল্ড লেভেল:</b> ${data.guildInfo.level}`;
+            } else {
+                resultDiv.className = 'error';
+                resultDiv.innerText = data.message || 'তথ্য পাওয়া যায়নি!';
+            }
+        } catch (err) {
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'error';
+            resultDiv.innerText = 'সার্ভার কানেকশন এরর!';
+        } finally {
+            checkBtn.disabled = false;
+            checkBtn.innerText = 'Check';
+        }
+    }
+
+    // ৩. অর্ডার সাবমিট হ্যান্ডলার
+    document.getElementById('gloryForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const submitBtn = document.getElementById('submitBtn');
+        const msgDiv = document.getElementById('response-msg');
+        
+        submitBtn.disabled = true;
+        submitBtn.innerText = "Processing...";
+        msgDiv.style.display = 'none';
+
+        const payload = {
+            playerUid: document.getElementById('playerUid').value,
+            guildId: document.getElementById('guildId').value,
+            packageId: document.getElementById('packageId').value
+        };
+
+        try {
+            const res = await fetch('/api/account/buy-glory', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await res.json();
+            
+            msgDiv.style.display = 'block';
+            if(data.success) {
+                msgDiv.className = 'success';
+                msgDiv.innerText = data.message;
+            } else {
+                msgDiv.className = 'error';
+                msgDiv.innerText = data.message || 'Error occurred';
+            }
+        } catch (err) {
+            msgDiv.style.display = 'block';
+            msgDiv.className = 'error';
+            msgDiv.innerText = 'Server error or Connection issue!';
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerText = "Buy Glory Now";
+        }
+    });
+</script>
+
+</body>
+</html>
